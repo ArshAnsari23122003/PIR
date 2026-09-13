@@ -1,11 +1,206 @@
-import React, { useState } from "react";
-import { Mail, MapPin, Phone, ArrowRight } from "lucide-react";
-import { assets } from "../../assets/assets.js";
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Mail, MapPin, Phone, ArrowRight } from 'lucide-react';
+import { assets } from '../../assets/assets.js';
 
+// --- DEPTH TEXT CONSTANTS & HELPERS ---
+const MAX_LAYERS = 64;
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const getLayerColor = (faceColor, depthColor, index, total) => {
+  const progress = total <= 1 ? 1 : index / total;
+  const eased = progress * progress;
+  const faceMix = Math.round((1 - eased) * 72 + 4);
+  return `color-mix(in srgb, ${faceColor} ${faceMix}%, ${depthColor})`;
+};
+
+const getTransform = (rotateX, rotateY) => `rotateX(${rotateX.toFixed(3)}deg) rotateY(${rotateY.toFixed(3)}deg)`;
+
+// --- IN-FILE DEPTH TEXT COMPONENT ---
+const DepthText = ({
+  text = 'print it red',
+  layers = 34,
+  depth = 2.4,
+  faceColor = '#ffffff',
+  depthColor = '#D4020B',
+  tilt = 7.5,
+  pointerTracking = true,
+  smoothing = 0.14,
+  perspective = 900,
+  autoOrbit = true,
+  orbitSpeed = 0.35,
+  fontSize = 'clamp(2.5rem, 9vw, 9rem)',
+  fontWeight = 900,
+  shadow = true,
+  className = '',
+  style = {}
+}) => {
+  const rootRef = useRef(null);
+  const stageRef = useRef(null);
+
+  const safeLayers = clamp(Math.round(Number(layers) || 1), 2, MAX_LAYERS);
+  const safeDepth = clamp(Number(depth) || 0, 0, 12);
+  const safeTilt = clamp(Number(tilt) || 0, 0, 12);
+  const safeSmoothing = clamp(Number(smoothing) || 0.14, 0.02, 0.35);
+  const safePerspective = clamp(Number(perspective) || 900, 300, 2000);
+  const safeOrbitSpeed = clamp(Number(orbitSpeed) || 0, 0, 2);
+
+  const baseRotation = useMemo(() => ({ x: -safeTilt * 0.32, y: safeTilt * 0.42 }), [safeTilt]);
+
+  const depthLayers = useMemo(
+    () =>
+      Array.from({ length: safeLayers }, (_, layerIndex) => {
+        const index = safeLayers - layerIndex;
+        return {
+          index,
+          color: getLayerColor(faceColor, depthColor, index, safeLayers),
+          transform: `translateZ(${-index * safeDepth}px)`
+        };
+      }),
+    [safeLayers, safeDepth, faceColor, depthColor]
+  );
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const stage = stageRef.current;
+    if (!root || !stage || typeof window === 'undefined') return undefined;
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const canTrackPointer = pointerTracking && finePointer && !reducedMotion;
+
+    let frameId = 0;
+    let activePointer = false;
+    let startTime = performance.now();
+    const current = { ...baseRotation };
+    const target = { ...baseRotation };
+
+    const applyTransform = () => {
+      stage.style.transform = getTransform(current.x, current.y);
+    };
+
+    if (reducedMotion) {
+      stage.style.transform = getTransform(baseRotation.x, baseRotation.y);
+      return undefined;
+    }
+
+    const handlePointerMove = event => {
+      const rect = root.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      activePointer = true;
+      const x = clamp((event.clientX - (rect.left + rect.width / 2)) / (rect.width * 0.8), -1, 1);
+      const y = clamp((event.clientY - (rect.top + rect.height / 2)) / (rect.height * 0.8), -1, 1);
+
+      target.x = baseRotation.x - y * safeTilt;
+      target.y = baseRotation.y + x * safeTilt;
+    };
+
+    const handlePointerLeave = () => {
+      activePointer = false;
+      target.x = baseRotation.x;
+      target.y = baseRotation.y;
+    };
+
+    if (canTrackPointer) {
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerleave', handlePointerLeave);
+      window.addEventListener('blur', handlePointerLeave);
+    }
+
+    const tick = now => {
+      if ((!canTrackPointer || !activePointer) && autoOrbit) {
+        const elapsed = (now - startTime) / 1000;
+        const orbit = elapsed * safeOrbitSpeed * Math.PI * 2;
+        const fallbackAmount = canTrackPointer ? 0.18 : 0.55;
+        target.x = baseRotation.x + Math.sin(orbit) * safeTilt * fallbackAmount;
+        target.y = baseRotation.y + Math.cos(orbit * 0.85) * safeTilt * fallbackAmount;
+      }
+
+      current.x += (target.x - current.x) * safeSmoothing;
+      current.y += (target.y - current.y) * safeSmoothing;
+      applyTransform();
+      frameId = requestAnimationFrame(tick);
+    };
+
+    applyTransform();
+    frameId = requestAnimationFrame(tick);
+
+    return () => {
+      if (canTrackPointer) {
+        window.removeEventListener('pointermove', handlePointerMove);
+        window.removeEventListener('pointerleave', handlePointerLeave);
+        window.removeEventListener('blur', handlePointerLeave);
+      }
+      cancelAnimationFrame(frameId);
+      startTime = 0;
+    };
+  }, [autoOrbit, baseRotation, pointerTracking, safeOrbitSpeed, safeSmoothing, safeTilt]);
+
+  const rootStyle = {
+    ...style,
+    perspective: `${safePerspective}px`,
+    display: 'inline-block',
+    transformStyle: 'preserve-3d',
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    textTransform: 'lowercase',
+    lineHeight: 1,
+    userSelect: 'none',
+    ...style
+  };
+
+  const stageStyle = {
+    display: 'inline-block',
+    transformStyle: 'preserve-3d',
+    transition: 'transform 0.08s linear',
+    willChange: 'transform'
+  };
+
+  const layerBaseStyle = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none',
+    userSelect: 'none'
+  };
+
+  const faceStyle = {
+    position: 'relative',
+    display: 'block',
+    whiteSpace: 'nowrap',
+    color: faceColor,
+    textShadow: shadow ? `0 22px 34px rgba(212, 2, 11, 0.4), 0 4px 8px rgba(0, 0, 0, 0.28)` : 'none'
+  };
+
+  return (
+    <span ref={rootRef} className={`depth-text-root ${className}`.trim()} style={rootStyle}>
+      <span ref={stageRef} style={stageStyle} className="depth-text-stage">
+        {depthLayers.map(layer => (
+          <span
+            aria-hidden="true"
+            key={layer.index}
+            style={{
+              ...layerBaseStyle,
+              color: layer.color,
+              transform: layer.transform
+            }}
+          >
+            {text}
+          </span>
+        ))}
+        <span style={faceStyle}>{text}</span>
+      </span>
+    </span>
+  );
+};
+
+// --- FOOTER COMPONENT ---
 const Footer = () => {
-  const [hoveredCharIndex, setHoveredCharIndex] = useState(null);
   const [email, setEmail] = useState("");
-  const brandName = "print it red";
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -14,16 +209,21 @@ const Footer = () => {
   };
 
   return (
-    <footer className="w-full bg-[#0A0A0A] text-white pt-16 pb-6 px-6 md:px-12 font-sans border-t border-zinc-800">
-      <div className="max-w-7xl mx-auto space-y-12">
+    <footer className="w-full bg-[#0A0A0A] text-white pt-16 pb-6 px-6 md:px-12 font-sans border-t border-zinc-800 relative overflow-hidden">
+      
+      {/* Background Subtle Printing Registration Crosses */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex justify-between px-10 items-center">
+        <span className="text-6xl font-mono">+</span>
+        <span className="text-6xl font-mono">+</span>
+      </div>
+
+      <div className="max-w-7xl mx-auto space-y-12 relative z-10">
         
         {/* Upper Grid: Link Columns + Newsletter Card */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           
           {/* Sitemap Columns (8 cols) */}
           <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-8">
-            
-            {/* Column 1 */}
             <div className="space-y-4">
               <span className="inline-block px-3.5 py-1 rounded-full text-[11px] tracking-wider font-semibold bg-zinc-900 text-zinc-300 border border-zinc-800 uppercase">
                 Navigation
@@ -37,7 +237,6 @@ const Footer = () => {
               </ul>
             </div>
 
-            {/* Column 2 */}
             <div className="space-y-4">
               <span className="inline-block px-3.5 py-1 rounded-full text-[11px] tracking-wider font-semibold bg-zinc-900 text-zinc-300 border border-zinc-800 uppercase">
                 Customer Care
@@ -51,7 +250,6 @@ const Footer = () => {
               </ul>
             </div>
 
-            {/* Column 3 */}
             <div className="space-y-4">
               <span className="inline-block px-3.5 py-1 rounded-full text-[11px] tracking-wider font-semibold bg-zinc-900 text-zinc-300 border border-zinc-800 uppercase">
                 Contact
@@ -80,7 +278,6 @@ const Footer = () => {
               Get direct updates on premium prints, rigid box packaging showcases, and custom orders.
             </p>
             
-            {/* Straight Input Form Container */}
             <form onSubmit={handleSubmit} className="w-full pt-1">
               <div className="flex items-center justify-between w-full bg-[#1A1A1E] border border-zinc-800/80 rounded-2xl p-2 gap-2 focus-within:border-[#D4020B] transition-colors">
                 <div className="flex items-center gap-2.5 flex-1 pl-2">
@@ -99,7 +296,7 @@ const Footer = () => {
 
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#D4020B] hover:bg-[#b00108] text-white text-[11px] font-bold rounded-xl flex items-center gap-1.5 transition-all transform hover:scale-105 active:scale-95 shrink-0 uppercase shadow-lg"
+                  className="px-4 py-2 bg-[#D4020B] hover:bg-[#b00108] text-white text-[11px] font-bold rounded-xl flex items-center gap-1.5 transition-all transform hover:scale-105 active:scale-95 shrink-0 uppercase shadow-lg cursor-pointer"
                 >
                   <span>SUBSCRIBE</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -138,31 +335,29 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Dynamic Responsive Lowercase Wordmark */}
-        <div 
-          className="pt-4 border-t border-zinc-800/80 text-center select-none w-full flex justify-center items-center"
-          onMouseLeave={() => setHoveredCharIndex(null)}
-        >
-          <h1 className="text-[clamp(1.5rem,8vw,12vw)] font-black tracking-tighter leading-none lowercase flex justify-center cursor-default w-full">
-            {brandName.split("").map((char, idx) => (
-              <span
-                key={idx}
-                onMouseEnter={() => setHoveredCharIndex(idx)}
-                className={`transition-colors duration-150 ${
-                  char === " " ? "w-[0.3em]" : ""
-                } ${
-                  hoveredCharIndex === idx ? "text-[#D4020B]" : "text-white"
-                }`}
-              >
-                {char}
-              </span>
-            ))}
-          </h1>
+        {/* 3D EXTRUDED PRINT EFFECT WORDMARK */}
+        <div className="pt-10 pb-6 border-t border-zinc-800/80 flex flex-col items-center justify-center overflow-hidden text-center">
+          <DepthText
+            text="print it red"
+            layers={24}
+            depth={2.2}
+            faceColor="#ffffff"
+            depthColor="#D4020B"
+            tilt={6}
+            autoOrbit={true}
+            orbitSpeed={0.25}
+            fontSize="clamp(2.5rem, 10vw, 11rem)"
+            fontWeight={900}
+            className="cursor-default tracking-tighter"
+          />
+          <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-500 mt-4 font-mono">
+            3D EXTRUDED PRESS // PREMIUM FINISH
+          </p>
         </div>
 
         {/* Bottom Legal Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 pt-2 font-medium">
-          <p>© 2026 PRINT IT RED</p>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 pt-4 font-medium border-t border-zinc-900">
+          <p>© 2026 print it red</p>
           <div className="flex items-center space-x-6 tracking-wider">
             <a href="#privacy" className="hover:text-zinc-300 transition-colors">PRIVACY</a>
             <a href="#terms" className="hover:text-zinc-300 transition-colors">TERMS</a>

@@ -12,6 +12,7 @@ import Hero from './components/home/Hero'
 import ProductCategories from './components/home/ProductCategories'
 import ProductFaceCards from './components/home/ProductFaceCards'
 import RigidBoxShowcase from './components/home/RigidBoxShowcase'
+import Products from './components/pages/Products'
 import MachineShowcase from './components/home/MachineShowcase'
 import WhyPrintItRed from './components/home/WhyPrintItRed'
 import TestimonialsAndFaq from './components/home/TestimonialsAndFaq'
@@ -45,14 +46,6 @@ const HomePage = () => {
   )
 }
 
-// Dedicated Products Page rendering ProductFaceCards
-const ProductsPage = () => {
-  return (
-    <main className="pt-20 md:pt-28 bg-black min-h-screen">
-      <ProductFaceCards />
-    </main>
-  )
-}
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true)
@@ -76,7 +69,7 @@ const App = () => {
 
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/products" element={<Products />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/get-quote" element={<GetQuoteSection />} />
             <Route path="/contact" element={<Contact5Section />} />

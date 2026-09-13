@@ -20,7 +20,7 @@ const WhatsAppIcon = ({ className }) => (
 
 const menuItems = [
   { label: 'Home', ariaLabel: 'Go to home page', link: '/' },
-  { label: 'Products', ariaLabel: 'View our products', link: '/#products' },
+  { label: 'Products', ariaLabel: 'View our products', link: '/products' },
   { label: 'About', ariaLabel: 'Learn about us', link: '/about' },
   { label: 'Contact', ariaLabel: 'Get in touch', link: '/contact' }
 ]
@@ -125,10 +125,10 @@ const Navbar = () => {
                 className="relative h-20 flex items-center cursor-pointer"
                 onMouseEnter={() => setIsMegaOpen(true)}
               >
-                <button className="flex items-center gap-1 hover:opacity-70 transition-opacity outline-none uppercase font-semibold">
+                <Link to="/products" className="flex items-center gap-1 hover:opacity-70 transition-opacity outline-none uppercase font-semibold">
                   Products
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isMegaOpen ? "rotate-180" : ""}`} />
-                </button>
+                </Link>
               </div>
               <Link
                 to="/about"
