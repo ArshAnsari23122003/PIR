@@ -1,35 +1,86 @@
-import React, { useState } from 'react';
-import { Plus, X, Upload, MessageCircle, Quote } from 'lucide-react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Star, MessageCircle, Repeat2, Heart, Plus, X, ArrowUpRight, BadgeCheck, Mail } from 'lucide-react';
+
+// --- SPOTLIGHT CARD COMPONENT ---
+const SpotlightCard = ({ children, className = '', spotlightColor = 'rgba(212, 2, 11, 0.15)' }) => {
+  const divRef = useRef(null);
+
+  const handleMouseMove = e => {
+    if (!divRef.current) return;
+    const rect = divRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    divRef.current.style.setProperty('--mouse-x', `${x}px`);
+    divRef.current.style.setProperty('--mouse-y', `${y}px`);
+    divRef.current.style.setProperty('--spotlight-color', spotlightColor);
+  };
+
+  return (
+    <div 
+      ref={divRef} 
+      onMouseMove={handleMouseMove} 
+      className={`relative rounded-3xl border border-slate-200 bg-slate-50 p-6 md:p-8 overflow-hidden transition-all duration-300 hover:shadow-xl group ${className}`}
+      style={{
+        '--mouse-x': '50%',
+        '--mouse-y': '50%',
+        '--spotlight-color': spotlightColor,
+      }}
+    >
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0"
+        style={{
+          background: 'radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), var(--spotlight-color), transparent 80%)'
+        }}
+      />
+      <div className="relative z-10">
+        {children}
+      </div>
+    </div>
+  );
+};
 
 const testimonials = [
   {
     id: 1,
     name: 'Arjun Verma',
+    handle: '@arjun_organics',
+    date: 'Mar 12',
     company: 'Verma Organics Pvt Ltd',
     quote: 'Best Quality packaging we’ve received so far. The rigid box structural integrity and gold foil stamping exceeded our expectations. Will definitely reorder.',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    stats: { replies: 12, retweets: 48, likes: '1.2k' }
   },
   {
     id: 2,
     name: 'Rohan Malhotra',
+    handle: '@rohan_apex',
+    date: 'Feb 28',
     company: 'Apex Retail Solutions',
     quote: 'The print sharpness and color accuracy on our large-format outdoor displays were spot on. Turnaround time was incredibly fast without sacrificing quality.',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200'
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+    stats: { replies: 4, retweets: 19, likes: 342 }
   },
   {
     id: 3,
     name: 'Priya Sundaram',
+    handle: '@priya_elegance',
+    date: 'Feb 15',
     company: 'Elegance Luxury Apparel',
-    quote: 'Their attention to detail on customized garment tags and frosted lanyard cards is top-notch. Print It Red has completely transformed our brand presentation.',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200'
+    quote: 'Their attention to detail on customized garment tags and frosted lanyard cards is top-notch. print it red has completely transformed our brand presentation.',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+    stats: { replies: 38, retweets: 102, likes: '2.4k' }
   },
   {
     id: 4,
     name: 'Vikramaditya Shah',
+    handle: '@vikram_packhub',
+    date: 'Jan 30',
     company: 'Shah Packaging Hub',
-    quote: 'Partnering with Print It Red elevated our B2B promotional collateral. Their zero-compromise approach to color accuracy gives us complete peace of mind.',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200'
+    quote: 'Partnering with print it red elevated our B2B promotional collateral. Their zero-compromise approach to color accuracy gives us complete peace of mind.',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+    stats: { replies: 9, retweets: 27, likes: 891 }
   }
 ];
 
@@ -53,238 +104,247 @@ const faqs = [
   {
     question: 'Can I request a sample proof before placing a bulk manufacturing order?',
     answer: 'Absolutely. We provide physical digital proofs and structural prototypes upon request so you can inspect material weight, color fidelity, and finish before final production.'
+  },
+  {
+    question: 'Do you offer custom metallic foiling and embossing finishes?',
+    answer: 'Yes! We specialize in hot foil stamping (gold, silver, rose gold, holographic), spot UV lamination, and multi-level blind debossing to make your packaging stand out.'
+  },
+  {
+    question: 'How do I track my active print production order?',
+    answer: 'Once your artwork is approved and pushed to the press floor, you will receive real-time status updates via SMS and WhatsApp, complete with live courier tracking links.'
+  },
+  {
+    question: 'Can your team help design artwork if I only have a brand logo?',
+    answer: 'Definitely. Our in-house graphic design studio can adapt your raw assets into print-ready layouts with proper bleed lines and color separation.'
   }
 ];
 
-// Interactive 3D Tilt Card Component
-const TiltCard = ({ item }) => {
-  const [rotateX, setRotateX] = useState(0);
-  const [rotateY, setRotateY] = useState(0);
-
-  const handleMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    setRotateX(-y / 12);
-    setRotateY(x / 12);
-  };
-
-  const handleMouseLeave = () => {
-    setRotateX(0);
-    setRotateY(0);
-  };
+const FaqAccordion = ({ faq }) => {
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="perspective-1000 py-6 px-3 shrink-0">
-      <div
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        style={{
-          transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
-          transition: rotateX === 0 ? 'transform 0.5s ease-out' : 'none'
-        }}
-        className="w-[320px] sm:w-[380px] h-[260px] bg-white rounded-2xl border-2 border-[#D4020B] p-6 shadow-xl hover:shadow-2xl transition-shadow duration-300 relative flex flex-col justify-between transform-gpu select-none"
-      >
-        <div className="absolute top-4 left-4 text-[#D4020B]">
-          <Quote className="w-6 h-6 fill-[#D4020B] rotate-180" />
-        </div>
-
-        <p className="text-slate-700 text-sm md:text-base leading-relaxed pl-6 pt-2 mb-4 font-medium line-clamp-4">
-          {item.quote}
-        </p>
-
-        <div className="flex items-center space-x-3 pt-4 border-t border-slate-100">
-          <img
-            src={item.avatar}
-            alt={item.name}
-            className="w-12 h-12 rounded-full object-cover border-2 border-[#D4020B] shrink-0"
-          />
-          <div className="overflow-hidden">
-            <h4 className="font-bold text-slate-900 text-sm md:text-base truncate">{item.name}</h4>
-            <p className="text-slate-500 text-xs md:text-sm font-medium truncate">{item.company}</p>
-          </div>
-        </div>
+    <div 
+      className={`border rounded-2xl p-5 md:p-6 cursor-pointer transition-all duration-300 ${isOpen ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-slate-50 text-slate-800 border-slate-200 hover:border-slate-300'}`}
+      onClick={() => setIsOpen(!isOpen)}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <h4 className="font-bold text-sm md:text-base leading-snug pr-4">
+          {faq.question}
+        </h4>
+        <button className={`shrink-0 mt-0.5 transition-transform duration-300 ${isOpen ? 'rotate-45 text-[#D4020B]' : 'text-slate-400'}`}>
+          <Plus className="w-5 h-5" />
+        </button>
       </div>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0, marginTop: 0 }}
+            animate={{ height: 'auto', opacity: 1, marginTop: 16 }}
+            exit={{ height: 0, opacity: 0, marginTop: 0 }}
+            className="overflow-hidden"
+          >
+            <p className={`text-sm md:text-base leading-relaxed ${isOpen ? 'text-slate-300' : 'text-slate-600'}`}>
+              {faq.answer}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
 const TestimonialsAndFaq = () => {
-  const [activeFaq, setActiveFaq] = useState(null);
+  const [showToast, setShowToast] = useState(false);
+
+  const handleEmailClick = () => {
+    setShowToast(true);
+    setTimeout(() => {
+      window.location.href = 'mailto:info@printitred.com?subject=print%20it%20red%20Inquiry';
+      setShowToast(false);
+    }, 1800);
+  };
 
   return (
-    <section className="w-full py-20 px-4 md:px-8 bg-white overflow-hidden space-y-24">
-      {/* Self-contained CSS Animations */}
-      <style>{`
-        .perspective-1000 {
-          perspective: 1000px;
-        }
-        @keyframes customMarquee {
-          0% { transform: translateX(0%); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-custom-marquee {
-          display: flex;
-          width: max-content;
-          animation: customMarquee 28s linear infinite;
-        }
-        .animate-custom-marquee:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
+    <div className="w-full bg-white min-h-screen py-24 px-4 sm:px-6 md:px-12 lg:px-20 font-sans space-y-32 relative overflow-hidden">
+      
+      {/* Toast Notification with Dark Glassmorphism */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div 
+            initial={{ y: -100, scale: 0.5, opacity: 0, x: '-50%' }}
+            animate={{ y: 0, scale: 1, opacity: 1, x: '-50%' }}
+            exit={{ y: -100, scale: 0.5, opacity: 0, x: '-50%' }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="fixed top-10 left-1/2 z-[110] bg-blue-950/80 backdrop-blur-xl text-white px-6 py-4 rounded-full flex items-center gap-4 shadow-2xl border border-blue-500/30 pointer-events-none"
+          >
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
+            <div className="flex flex-col">
+              <span className="text-xs font-bold uppercase tracking-widest text-white">
+                Email Support
+              </span>
+              <span className="text-[10px] text-blue-200 mt-0.5">
+                Opening Mail Client...
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* 1. Testimonials Section with Lamination Roller Frame */}
-      <div className="max-w-7xl mx-auto space-y-12">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-            What our Customers say
+      {/* --- SECTION 1: SOCIAL PROOF --- */}
+      <section className="max-w-[1400px] mx-auto">
+        <div className="text-center space-y-3 mb-16">
+          <span className="text-xs font-bold uppercase tracking-widest text-[#D4020B]">Client Testimonials</span>
+          <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight uppercase">
+            Trusted by Industry Leaders
           </h2>
-          <div className="w-32 h-1 bg-[#D4020B] mx-auto rounded-full" />
         </div>
 
-        {/* Lamination Machine Assembly */}
-        <div className="relative w-full rounded-3xl bg-zinc-900/5 p-2 sm:p-4 border border-zinc-200">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
-          {/* LEFT LAMINATION ROLLER */}
-          <div className="absolute left-0 top-0 bottom-0 z-30 w-12 sm:w-16 bg-gradient-to-r from-zinc-900 via-zinc-700 to-zinc-900 shadow-2xl rounded-l-3xl border-r-2 border-[#D4020B] flex flex-col justify-between items-center py-6 pointer-events-none">
-            <div className="w-8 h-8 rounded-full border-4 border-zinc-500 bg-zinc-800 shadow-inner animate-spin" style={{ animationDuration: '6s' }} />
-            <div className="h-1/2 w-1.5 bg-[#D4020B] rounded-full animate-pulse shadow-[0_0_12px_#D4020B]" />
-            <div className="w-8 h-8 rounded-full border-4 border-zinc-500 bg-zinc-800 shadow-inner animate-spin" style={{ animationDuration: '6s' }} />
+          {/* Left Panel: Featured Pull-Quote with Spotlight */}
+          <div className="lg:col-span-5">
+            <SpotlightCard className="h-full flex flex-col justify-between border-slate-200 bg-slate-50">
+              <div>
+                <div className="flex items-center gap-1.5 mb-8">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-[#D4020B] text-[#D4020B]" />
+                  ))}
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight tracking-tight mb-10">
+                  "print it red made our packaging and brand materials feel ten times more premium without adding a single delay to our timeline."
+                </h3>
+                
+                <div className="flex items-center gap-4">
+                  <img 
+                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200" 
+                    alt="Reviewer" 
+                    className="w-12 h-12 rounded-full object-cover border-2 border-[#D4020B]"
+                  />
+                  <div>
+                    <h4 className="text-slate-900 font-bold text-sm md:text-base">Meera Desai</h4>
+                    <p className="text-slate-500 text-xs font-medium">Head of Marketing, Northstar</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-16 pt-8 border-t border-slate-200">
+                <p className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase mb-4">
+                  In Good Company
+                </p>
+                <div className="flex items-center gap-6 text-slate-600 font-bold text-sm">
+                  <span>Apex</span>
+                  <span>Relay</span>
+                  <span>Forma</span>
+                  <span>Alpenglow</span>
+                </div>
+              </div>
+            </SpotlightCard>
           </div>
 
-          {/* RIGHT LAMINATION ROLLER */}
-          <div className="absolute right-0 top-0 bottom-0 z-30 w-12 sm:w-16 bg-gradient-to-l from-zinc-900 via-zinc-700 to-zinc-900 shadow-2xl rounded-r-3xl border-l-2 border-[#D4020B] flex flex-col justify-between items-center py-6 pointer-events-none">
-            <div className="w-8 h-8 rounded-full border-4 border-zinc-500 bg-zinc-800 shadow-inner animate-spin" style={{ animationDuration: '6s' }} />
-            <div className="h-1/2 w-1.5 bg-[#D4020B] rounded-full animate-pulse shadow-[0_0_12px_#D4020B]" />
-            <div className="w-8 h-8 rounded-full border-4 border-zinc-500 bg-zinc-800 shadow-inner animate-spin" style={{ animationDuration: '6s' }} />
+          {/* Right Panel: Verified Social Grid with Spotlight Cards */}
+          <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {testimonials.map((t) => (
+              <SpotlightCard key={t.id} className="flex flex-col justify-between">
+                <div>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <img src={t.avatar} alt={t.name} className="w-10 h-10 rounded-full object-cover border border-slate-200" />
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <h4 className="text-slate-900 font-bold text-sm">{t.name}</h4>
+                          <BadgeCheck className="w-3.5 h-3.5 text-[#D4020B]" />
+                        </div>
+                        <p className="text-slate-500 text-xs">{t.handle}</p>
+                      </div>
+                    </div>
+                    <span className="text-slate-400 text-xs">{t.date}</span>
+                  </div>
+                  <p className="text-slate-700 text-sm leading-relaxed mb-6 font-medium">
+                    {t.quote}
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-6 text-slate-400">
+                  <div className="flex items-center gap-2 cursor-pointer hover:text-[#D4020B] transition-colors">
+                    <MessageCircle className="w-4 h-4" />
+                    <span className="text-xs">{t.stats.replies}</span>
+                  </div>
+                  <div className="flex items-center gap-2 cursor-pointer hover:text-[#D4020B] transition-colors">
+                    <Repeat2 className="w-4 h-4" />
+                    <span className="text-xs">{t.stats.retweets}</span>
+                  </div>
+                  <div className="flex items-center gap-2 cursor-pointer hover:text-[#D4020B] transition-colors">
+                    <Heart className="w-4 h-4" />
+                    <span className="text-xs">{t.stats.likes}</span>
+                  </div>
+                </div>
+              </SpotlightCard>
+            ))}
+          </div>
+          
+        </div>
+      </section>
+
+      {/* --- SECTION 2: FAQ & SUPPORT PANEL --- */}
+      <section className="max-w-[1400px] mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:items-start">
+          
+          {/* Left Panel: Sticky Support Contact */}
+          <div className="lg:col-span-4 bg-slate-900 text-white rounded-[2rem] p-8 md:p-10 border border-slate-800 lg:sticky lg:top-10 shadow-xl">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#D4020B]">Help Center</span>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight leading-tight mt-2 mb-4">
+              Questions that need a human?
+            </h2>
+            <p className="text-slate-400 text-sm md:text-base leading-relaxed mb-8 pr-4">
+              The answers here cover the basics. For complex die-cuts, bulk corporate pricing, or specialized material sourcing, send us your requirements: a real printing expert replies.
+            </p>
+            
+            <div className="grid grid-cols-2 gap-6 py-6 border-y border-slate-800 mb-8">
+              <div>
+                <p className="text-3xl font-black text-white mb-1">2h</p>
+                <p className="text-slate-500 text-xs uppercase tracking-wider font-bold">Median first reply</p>
+              </div>
+              <div>
+                <p className="text-3xl font-black text-white mb-1">98%</p>
+                <p className="text-slate-500 text-xs uppercase tracking-wider font-bold">Support CSAT</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleEmailClick}
+              className="w-full bg-[#D4020B] hover:bg-red-700 text-white font-bold rounded-full py-4 px-6 flex items-center justify-between transition-colors cursor-pointer shadow-lg shadow-red-600/20"
+            >
+              <span className="uppercase tracking-widest text-xs">Email the team</span>
+              <ArrowUpRight className="w-5 h-5 text-white" />
+            </button>
+            
+            <p className="text-slate-500 text-xs mt-6 text-center">
+              Weekdays 9:00–18:00 IST, pan-India delivery.
+            </p>
           </div>
 
-          {/* Glossy Overlay Sheen (Simulating Plastic Lamination Foil) */}
-          <div className="absolute inset-x-12 inset-y-0 z-20 pointer-events-none bg-gradient-to-b from-white/20 via-transparent to-white/20" />
-
-          {/* Infinite Marquee Track */}
-          <div className="relative w-full overflow-hidden px-10 sm:px-14">
-            <div className="animate-custom-marquee flex items-center">
-              {[...testimonials, ...testimonials].map((item, index) => (
-                <TiltCard key={`${item.id}-${index}`} item={item} />
+          {/* Right Panel: FAQ Masonry Grid */}
+          <div className="lg:col-span-8 flex flex-col md:flex-row gap-4 md:gap-6">
+            
+            {/* Column 1 (Odds) */}
+            <div className="flex-1 space-y-4 md:space-y-6">
+              {faqs.filter((_, i) => i % 2 === 0).map((faq, index) => (
+                <FaqAccordion key={`col1-${index}`} faq={faq} />
               ))}
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* 2. FAQ Section with Dynamic Island Pop-out */}
-      <div className="max-w-4xl mx-auto space-y-10 relative">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Frequently Asked Questions
-          </h2>
-          <div className="w-32 h-1 bg-[#D4020B] mx-auto rounded-full" />
-        </div>
-
-        <div className="space-y-4 relative">
-          {faqs.map((faq, index) => (
-            <motion.div
-              key={index}
-              layout
-              className="rounded-full border-2 border-[#D4020B]/30 bg-white overflow-hidden shadow-sm hover:shadow-md"
-            >
-              <button
-                onClick={() => setActiveFaq(faq)}
-                className="w-full flex items-center justify-between py-4 px-6 text-left font-bold text-slate-800 text-sm md:text-base hover:text-[#D4020B] transition-colors"
-              >
-                <span>{faq.question}</span>
-                <div className="w-8 h-8 rounded-full bg-red-50 text-[#D4020B] flex items-center justify-center shrink-0 ml-4">
-                  <Plus className="w-5 h-5" />
-                </div>
-              </button>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Dynamic Island Expand Modal */}
-        <AnimatePresence>
-          {activeFaq && (
-            <>
-              {/* Dark Overlay */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setActiveFaq(null)}
-                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40"
-              />
-
-              {/* Dynamic Island Box */}
-              <div className="fixed inset-0 flex items-center justify-center z-50 px-4 pointer-events-none">
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0, y: 20 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.8, opacity: 0, y: 20 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className="pointer-events-auto w-full max-w-2xl bg-white rounded-3xl border-2 border-[#D4020B] p-6 md:p-8 shadow-2xl relative space-y-4"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <h3 className="text-lg md:text-xl font-extrabold text-slate-900 leading-snug">
-                      {activeFaq.question}
-                    </h3>
-                    <button
-                      onClick={() => setActiveFaq(null)}
-                      className="w-10 h-10 rounded-full bg-red-50 text-[#D4020B] hover:bg-[#D4020B] hover:text-white flex items-center justify-center transition-all shrink-0"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                  </div>
-
-                  <p className="text-slate-600 text-sm md:text-base leading-relaxed border-t border-slate-100 pt-4">
-                    {activeFaq.answer}
-                  </p>
-                </motion.div>
-              </div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* 3. Bottom Banner Call-To-Action */}
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-[#D4020B] rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-red-500/20">
-          <div className="flex items-center space-x-4 text-white">
-            <div className="p-3 bg-white/10 rounded-2xl border border-white/20 shrink-0">
-              <Upload className="w-8 h-8 text-white" />
+            {/* Column 2 (Evens) */}
+            <div className="flex-1 space-y-4 md:space-y-6">
+              {faqs.filter((_, i) => i % 2 !== 0).map((faq, index) => (
+                <FaqAccordion key={`col2-${index}`} faq={faq} />
+              ))}
             </div>
-            <div>
-              <h3 className="text-xl md:text-2xl font-black tracking-wide uppercase">
-                Have a design ready?
-              </h3>
-              <p className="text-white/90 font-medium text-sm md:text-base">
-                Let’s print it red today.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-            <a
-              href="#upload"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-[#D4020B] font-bold px-6 py-3.5 rounded-full shadow-md hover:bg-slate-100 transition-all text-sm md:text-base whitespace-nowrap"
-            >
-              <Upload className="w-4 h-4" />
-              Upload & Get Quote
-            </a>
-
-            <a
-              href="https://wa.me/919876543210"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border-2 border-white text-white font-bold px-6 py-3.5 rounded-full hover:bg-white hover:text-[#D4020B] transition-all text-sm md:text-base whitespace-nowrap"
-            >
-              <MessageCircle className="w-4 h-4" />
-              Chat on WhatsApp
-            </a>
+            
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+    </div>
   );
 };
 

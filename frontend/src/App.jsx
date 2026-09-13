@@ -22,6 +22,7 @@ import MacPreloader from './components/home/MacPreloader'
 import AboutUs from './components/pages/AboutUs'
 import GetQuoteSection from './components/pages/GetQuote'
 import Contact5Section from './components/pages/ContactUs'
+import FloatingContact from './components/common/FloatingContact'
 
 // Helper component to auto-scroll to top on page route changes
 const ScrollToTop = () => {
@@ -66,7 +67,7 @@ const App = () => {
           <TargetCursor cursorColor="#D4020B" cursorColorOnTarget="#D4020B" />
           <TopOfferBar />
           <Navbar />
-
+          <FloatingContact/>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/products" element={<Products />} />
